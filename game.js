@@ -1,7 +1,14 @@
 let canvas = document.querySelector("#canvas")
 let ctx = canvas.getContext('2d')
-canvas.width = window.innerWidth - 20;
-canvas.height = window.innerHeight - 50;
+window.addEventListener('load', () => {
+    if(window.innerHeight % 20 != 0 || window.innerWidth % 20 != 0){
+        canvas.height = Math.floor((window.innerHeight - 20) / 20) * 20
+        canvas.width = Math.floor((window.innerWidth - 20) / 20) * 20
+    } else {
+        canvas.width = window.innerWidth - 20;
+        canvas.height = window.innerHeight - 20;    
+    }
+})
 
 class Snake {
     constructor(x, y, size){
@@ -73,6 +80,10 @@ class Food {
 let snake = new Snake(20, 20, 20)
 let food = new Food()
 let highscore = [0]
+let fps = 10
+let diff = []
+let levels = []
+let indicator = 0
 
 function checkIfDead(){
     for(let i = 1; i < snake.tail.length; i++){
@@ -83,11 +94,16 @@ function checkIfDead(){
             }
             ctx.clearRect(0, 0, canvas.width, canvas.height)
             snake.tail.splice(0, snake.tail.length - 1)
+            indicator = 0
+            fps = 10
+            canvas.style.background = "black"
+            diff = []
+            levels = []
         }
     } 
 }
 
-function checkOffsetErrAndIfWhenHitWall() {
+function checkWhenHitWall() {
     let head = snake.tail[snake.tail.length - 1]
 
     if(head.x < 0){
@@ -100,17 +116,52 @@ function checkOffsetErrAndIfWhenHitWall() {
         head.y = 0
     }
     
-    if(head.x % 10 != 0){
-        head.x += 1
-    } else if(head.y %  10!= 0){
-        head.y -= 3
-    }
+    // if(head.x % 10 != 0){
+    //     head.x += 1
+    // } else if(head.y %  10!= 0){
+    //     head.y -= 3
+    // }
 }
 
-function score() {
+function scoreAndLevels() {
+    let diffColors = ['white', 'yellow', 'orange', 'red', 'darkred']
+
     ctx.font = "40px Arial"
     ctx.fillStyle = "white"
     ctx.fillText("Score:" + (snake.tail.length - 1), 1000, 60)
+    if(snake.tail.length % 5 == 0){
+        if(diff.includes(snake.tail.length) == false){
+            diff.push(snake.tail.length)   
+            fps = fps += 2      
+        }
+    }
+
+    if(snake.tail.length % 10 == 0){
+        if(levels.includes(snake.tail.length) == false){
+            levels.push(snake.tail.length)
+            indicator = indicator += 1
+        }
+    }
+
+    if(snake.tail.length == 50){
+        setInterval(() => {
+            canvas.style.background = '#B62203'
+        }, 200)
+
+        setInterval(() => {
+            canvas.style.background = 'black'
+        }, 1000)
+
+        setInterval(() => {
+            canvas.style.background = 'orange'
+        }, 500)
+
+        setInterval(() => {
+            canvas.style.background = 'white'
+        }, 900)
+    }
+
+    snake.draw(diffColors[indicator])
 }
 
 function highScore() {
@@ -124,11 +175,15 @@ function mainLoop(){
     snake.update()
     snake.draw("white")
     checkIfDead() 
-    checkOffsetErrAndIfWhenHitWall()
+    checkWhenHitWall()
     food.check()
     food.draw() 
-    score()
+    scoreAndLevels()
     highScore()
+
+    setTimeout(() => {
+        requestAnimationFrame(mainLoop)
+    }, 1000/fps)
 }
 
 function generateApple() {
@@ -143,16 +198,16 @@ function generateApple() {
 
 /* CONTROLS */
 window.addEventListener('keydown', (e) => {
-    if(e.key == "ArrowLeft" && snake.moveX != 1){
+    if(e.key == "ArrowLeft" || e.key == 'a' && snake.moveX != 1){
         snake.moveX = -1
         snake.moveY = 0
-    } else if(e.key == "ArrowRight" && snake.moveX != -1){
+    } else if(e.key == "ArrowRight" || e.key == 'd' && snake.moveX != -1){
         snake.moveX = 1
         snake.moveY = 0
-    } else if(e.key == "ArrowUp" && snake.moveY != 1){
+    } else if(e.key == "ArrowUp" || e.key == 'w' && snake.moveY != 1){
         snake.moveX = 0
         snake.moveY = -1
-    } else if(e.key == "ArrowDown" && snake.moveY != -1){
+    } else if(e.key == "ArrowDown" ||  e.key == 's' && snake.moveY != -1){
         snake.moveX = 0
         snake.moveY = 1
     }
@@ -160,4 +215,5 @@ window.addEventListener('keydown', (e) => {
 
 //Start up
 generateApple()
-setInterval(mainLoop, 1000/15)
+// setInterval(mainLoop, 1000/15)
+mainLoop()
